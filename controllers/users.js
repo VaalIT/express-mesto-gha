@@ -12,10 +12,10 @@ module.exports.getUserById = (req, res) => {
     .orFail(() => new Error('Пользователь не найден'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.name === 'NotFoundError') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
-      } else if (err.name === 'CastError') {
+      if (err.name === 'CastError') {
         res.status(BAD_REQUEST).send({ message: 'Передан некорректный id пользователя' });
+      } else if (err.name === 'NotFoundError') {
+        res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
       } else {
         res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
       }
