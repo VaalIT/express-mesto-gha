@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { NOT_FOUND } = require('./errors');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 
@@ -21,5 +22,8 @@ app.use((req, res, next) => {
 });
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
+app.use('*', (req, res) => {
+  res.status(NOT_FOUND).send({ message: 'Страница не найдена' });
+});
 
 app.listen(PORT);
