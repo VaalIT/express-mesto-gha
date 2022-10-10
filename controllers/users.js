@@ -9,10 +9,13 @@ module.exports.getAllUsers = (req, res) => {
 
 module.exports.getUserById = (req, res) => {
   User.findById(req.params.userId)
+    .orFail(() => new Error('Пользователь не найден'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'NotFoundError') {
         res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
+      } else if (err.name === 'CastError') {
+        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id пользователя' });
       } else {
         res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
       }
@@ -36,7 +39,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUserInfo = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
