@@ -1,13 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const {
-  BAD_REQUEST, UNAUTHORIZED, NOT_FOUND, INTERNAL_SERVER_ERROR,
-} = require('../utils/errors');
+const { BAD_REQUEST, NOT_FOUND } = require('../utils/errors');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
@@ -19,18 +17,20 @@ module.exports.login = (req, res) => {
           maxAge: 3600000 * 24 * 7,
           httpOnly: true,
           sameSite: true,
-        });
+        })
+        .send({ message: 'Авторизация успешна' })
+        .end();
     })
-    .catch(() => res.status(UNAUTHORIZED).send({ message: 'Отказано в доступе' }));
+    .catch(next);
 };
 
-module.exports.getAllUsers = (req, res) => {
+module.exports.getAllUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send({ data: users }))
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' }));
+    .catch(next);
 };
 
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail(() => {
       throw new Error('Пользователь не найден');
@@ -42,12 +42,12 @@ module.exports.getUserById = (req, res) => {
       } else if (err.message === 'Пользователь не найден') {
         res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -62,12 +62,12 @@ module.exports.createUser = (req, res) => {
       if (err.name === 'ValidationError') {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.getMyInfo = (req, res) => {
+module.exports.getMyInfo = (req, res, next) => {
   User.findById(req.user._id)
     .orFail(() => {
       throw new Error('Пользователь не найден');
@@ -79,12 +79,12 @@ module.exports.getMyInfo = (req, res) => {
       } else if (err.message === 'Пользователь не найден') {
         res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.updateUserInfo = (req, res) => {
+module.exports.updateUserInfo = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
@@ -98,12 +98,12 @@ module.exports.updateUserInfo = (req, res) => {
       } else if (err.message === 'Пользователь не найден') {
         res.status(NOT_FOUND).send({ message: 'Пользователь с указанным id не найден' });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.updateUserAvatar = (req, res) => {
+module.exports.updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
@@ -117,7 +117,7 @@ module.exports.updateUserAvatar = (req, res) => {
       } else if (err.message === 'Пользователь не найден') {
         res.status(NOT_FOUND).send({ message: 'Пользователь с указанным id не найден' });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
