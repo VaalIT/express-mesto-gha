@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const {
   BAD_REQUEST, UNAUTHORIZED, NOT_FOUND, INTERNAL_SERVER_ERROR,
-} = require('../errors');
+} = require('../utils/errors');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
@@ -61,6 +61,23 @@ module.exports.createUser = (req, res) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      } else {
+        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
+      }
+    });
+};
+
+module.exports.getMyInfo = (req, res) => {
+  User.findById(req.user._id)
+    .orFail(() => {
+      throw new Error('Пользователь не найден');
+    })
+    .then((user) => res.send({ data: user }))
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id пользователя' });
+      } else if (err.message === 'Пользователь не найден') {
+        res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
       } else {
         res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла внутренняя ошибка сервера' });
       }
