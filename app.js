@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const { celebrate, Joi, errors } = require('celebrate');
+const cookieParser = require('cookie-parser');
 const NotFound = require('./utils/NotFound');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
@@ -17,6 +20,7 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
