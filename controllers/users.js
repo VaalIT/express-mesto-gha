@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const { User } = require('../models/user');
 const { BAD_REQUEST, NOT_FOUND } = require('../utils/errors');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
@@ -8,7 +8,7 @@ const { NODE_ENV, JWT_SECRET } = process.env;
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
-  return User.findUserByCredentials(email, password)
+  User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
 
@@ -17,9 +17,8 @@ module.exports.login = (req, res, next) => {
           maxAge: 3600000 * 24 * 7,
           httpOnly: true,
           sameSite: true,
-        })
-        .send({ message: 'Авторизация успешна' })
-        .end();
+        });
+      res.status(200).send({ message: 'Авторизация прошла успешно.' });
     })
     .catch(next);
 };
@@ -73,15 +72,7 @@ module.exports.getMyInfo = (req, res, next) => {
       throw new Error('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id пользователя' });
-      } else if (err.message === 'Пользователь не найден') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 module.exports.updateUserInfo = (req, res, next) => {
