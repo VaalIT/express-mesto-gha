@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const bodyParser = require('body-parser');
 const { celebrate, Joi, errors } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const NotFound = require('./utils/NotFound');
@@ -18,9 +20,10 @@ const app = express();
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
 app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -41,7 +44,7 @@ app.get('/signout', signout);
 
 app.use('/', auth, usersRouter);
 app.use('/', auth, cardsRouter);
-app.use('*', auth, (req, res, next) => {
+app.use('*', (req, res, next) => {
   next(new NotFound('Страница не найдена'));
 });
 
