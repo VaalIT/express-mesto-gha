@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/user');
-const { BAD_REQUEST, NOT_FOUND } = require('../utils/errors');
+const BadRequest = require('../utils/BadRequest');
+const Conflict = require('../utils/Conflict');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
@@ -51,19 +52,27 @@ module.exports.createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
 
-  bcrypt
-    .hash(password, 10)
-    .then((hash) => User.create({
-      name, about, avatar, email, password: hash,
-    }))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
-      } else {
-        next(err);
+  User.findOne({ email })
+    .then((sameEmail) => {
+      if (sameEmail) {
+        throw new Conflict('Пользователь с данным Email уже зарегистрирован');
       }
-    });
+
+      bcrypt
+        .hash(password, 10)
+        .then((hash) => User.create({
+          name, about, avatar, email, password: hash,
+        }))
+        .then((user) => res.send({ data: user }))
+        .catch((err) => {
+          if (err.name === 'ValidationError') {
+            next(new BadRequest('Переданы некорректные данные при создании пользователя'));
+            return;
+          }
+          next(err);
+        });
+    })
+    .catch(next);
 };
 
 module.exports.getMyInfo = (req, res, next) => {
