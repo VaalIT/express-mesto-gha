@@ -5,6 +5,12 @@ const {
   getCards, createCard, deleteCard, likeCard, dislikeCard,
 } = require('../controllers/cards');
 
+const handlerValidation = celebrate({
+  params: Joi.object().keys({
+    cardId: Joi.string().required().hex().length(24),
+  }),
+});
+
 cardsRouter.get('/cards', getCards);
 
 cardsRouter.post('/cards', celebrate({
@@ -14,8 +20,8 @@ cardsRouter.post('/cards', celebrate({
   }),
 }), createCard);
 
-cardsRouter.delete('/cards/:cardId', deleteCard);
-cardsRouter.put('/cards/:cardId/likes', likeCard);
-cardsRouter.delete('/cards/:cardId/likes', dislikeCard);
+cardsRouter.delete('/cards/:cardId', handlerValidation, deleteCard);
+cardsRouter.put('/cards/:cardId/likes', handlerValidation, likeCard);
+cardsRouter.delete('/cards/:cardId/likes', handlerValidation, dislikeCard);
 
 module.exports = cardsRouter;
