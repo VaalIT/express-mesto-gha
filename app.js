@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 const NotFound = require('./utils/NotFound');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
-const { login, createUser } = require('./controllers/users');
+const { login, createUser, signout } = require('./controllers/users');
 const auth = require('./middlewares/auth');
 const { error } = require('./middlewares/error');
 const { regexp } = require('./utils/regexp');
@@ -37,12 +37,11 @@ app.post('/signup', celebrate({
     password: Joi.string().required().min(8),
   }),
 }), createUser);
+app.get('/signout', signout);
 
-app.use(auth);
-
-app.use('/', usersRouter);
-app.use('/', cardsRouter);
-app.use('*', (req, res, next) => {
+app.use('/', auth, usersRouter);
+app.use('/', auth, cardsRouter);
+app.use('*', auth, (req, res, next) => {
   next(new NotFound('Страница не найдена'));
 });
 
