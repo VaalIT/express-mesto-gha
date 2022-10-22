@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/user');
 const BadRequest = require('../utils/BadRequest');
+const NotFound = require('../utils/NotFound');
 const Conflict = require('../utils/Conflict');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
@@ -33,17 +34,15 @@ module.exports.getAllUsers = (req, res, next) => {
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail(() => {
-      throw new Error('Пользователь не найден');
+      throw new NotFound('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id пользователя' });
-      } else if (err.message === 'Пользователь не найден') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
-      } else {
-        next(err);
+        next(new BadRequest('Передан некорректный id пользователя'));
+        return;
       }
+      next(err);
     });
 };
 
@@ -78,7 +77,7 @@ module.exports.createUser = (req, res, next) => {
 module.exports.getMyInfo = (req, res, next) => {
   User.findById(req.user._id)
     .orFail(() => {
-      throw new Error('Пользователь не найден');
+      throw new NotFound('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
     .catch(next);
@@ -89,17 +88,15 @@ module.exports.updateUserInfo = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .orFail(() => {
-      throw new Error('Пользователь не найден');
+      throw new NotFound('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-      } else if (err.message === 'Пользователь не найден') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь с указанным id не найден' });
-      } else {
-        next(err);
+        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
+        return;
       }
+      next(err);
     });
 };
 
@@ -108,16 +105,14 @@ module.exports.updateUserAvatar = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .orFail(() => {
-      throw new Error('Пользователь не найден');
+      throw new NotFound('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-      } else if (err.message === 'Пользователь не найден') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь с указанным id не найден' });
-      } else {
-        next(err);
+        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
+        return;
       }
+      next(err);
     });
 };
