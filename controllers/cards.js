@@ -2,6 +2,7 @@ const Card = require('../models/card');
 const BadRequest = require('../utils/BadRequest');
 const Forbidden = require('../utils/Forbidden');
 const NotFound = require('../utils/NotFound');
+const InternalServerError = require('../utils/InternalServerError');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -22,7 +23,7 @@ module.exports.createCard = (req, res, next) => {
       if (err.name === 'ValidationError') {
         next(new BadRequest('Переданы некорректные данные при создании карточки'));
       } else {
-        next(err);
+        next(new InternalServerError());
       }
     });
 };
@@ -43,7 +44,7 @@ module.exports.deleteCard = (req, res, next) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id карточки'));
       } else {
-        next(err);
+        next(new InternalServerError());
       }
     });
 };
@@ -58,7 +59,7 @@ module.exports.likeCard = (req, res, next) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id карточки'));
       } else {
-        next(err);
+        next(new InternalServerError());
       }
     });
 };
@@ -73,7 +74,7 @@ module.exports.dislikeCard = (req, res, next) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id карточки'));
       } else {
-        next(err);
+        next(new InternalServerError());
       }
     });
 };

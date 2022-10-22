@@ -14,7 +14,7 @@ const auth = require('./middlewares/auth');
 const { error } = require('./middlewares/error');
 const { regexp } = require('./utils/regexp');
 
-const { PORT = 3000 } = process.env;
+const { PORT = 8000 } = process.env;
 
 const app = express();
 

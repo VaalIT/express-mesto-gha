@@ -4,6 +4,7 @@ const User = require('../models/user');
 const BadRequest = require('../utils/BadRequest');
 const NotFound = require('../utils/NotFound');
 const Conflict = require('../utils/Conflict');
+const InternalServerError = require('../utils/InternalServerError');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
@@ -46,7 +47,7 @@ module.exports.getUserById = (req, res, next) => {
         next(new BadRequest('Передан некорректный id пользователя'));
         return;
       }
-      next(err);
+      next(new InternalServerError());
     });
 };
 
@@ -70,12 +71,9 @@ module.exports.createUser = (req, res, next) => {
         }))
         .catch((err) => {
           if (err.code === 11000) {
-            throw new Conflict('Пользователь с таким Email уже существует');
-          } else if (err.name === 'ValidationError') {
-            throw new BadRequest(`Введены некорректные данные: ${err.message}`);
-          } else {
-            next(err);
+            next(new Conflict('Пользователь с таким Email уже существует'));
           }
+          next(new InternalServerError());
         });
     });
 };
@@ -99,10 +97,9 @@ module.exports.updateUserInfo = (req, res, next) => {
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
-        return;
+        res.send(new BadRequest('Переданы некорректные данные при обновлении профиля'));
       }
-      next(err);
+      next(new InternalServerError());
     });
 };
 
@@ -119,7 +116,7 @@ module.exports.updateUserAvatar = (req, res, next) => {
         next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
         return;
       }
-      next(err);
+      next(new InternalServerError());
     });
 };
 
