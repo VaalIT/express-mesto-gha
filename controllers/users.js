@@ -5,7 +5,7 @@ const BadRequest = require('../utils/BadRequest');
 const NotFound = require('../utils/NotFound');
 const Conflict = require('../utils/Conflict');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+const { NODE_ENV, JWT_SECRET = 'dev-secret' } = process.env;
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
@@ -51,27 +51,28 @@ module.exports.createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
 
-  User.findOne({ email })
-    .then((sameEmail) => {
-      if (sameEmail) {
-        throw new Conflict('Пользователь с данным Email уже зарегистрирован');
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
+    .then((user) => res.status(201).send({
+      data: {
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+      },
+    }))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequest('Переданы некорректные данные при создании пользователя'));
+      } else if (err.code === 11000) {
+        next(new Conflict('Пользователь с данным Email уже зарегистрирован'));
+      } else {
+        next(err);
       }
-
-      bcrypt
-        .hash(password, 10)
-        .then((hash) => User.create({
-          name, about, avatar, email, password: hash,
-        }))
-        .then((user) => res.send({ data: user }))
-        .catch((err) => {
-          if (err.name === 'ValidationError') {
-            next(new BadRequest('Переданы некорректные данные при создании пользователя'));
-            return;
-          }
-          next(err);
-        });
-    })
-    .catch(next);
+    });
 };
 
 module.exports.getMyInfo = (req, res, next) => {
