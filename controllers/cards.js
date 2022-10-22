@@ -32,7 +32,7 @@ module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFound('Карточка с указанным id не найдена');
+        next(new NotFound('Карточка с указанным id не найдена'));
       } else if (card.owner.toString() !== req.user._id) {
         next(new Forbidden('У вас нет прав для удаления карточки'));
       } else {
@@ -52,12 +52,16 @@ module.exports.deleteCard = (req, res, next) => {
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
     .orFail(() => {
-      throw new NotFound('Карточка не найдена');
+      throw new Error('Карточка не найдена');
     })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id карточки'));
+      } else if (err.message === 'Карточка не найдена') {
+        next(new NotFound('Карточка по указанному id не найдена'));
+        // eslint-disable-next-line no-useless-return
+        return;
       } else {
         next(new InternalServerError());
       }
@@ -67,12 +71,16 @@ module.exports.likeCard = (req, res, next) => {
 module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .orFail(() => {
-      throw new NotFound('Карточка не найдена');
+      throw new Error('Карточка не найдена');
     })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id карточки'));
+      } else if (err.message === 'Карточка не найдена') {
+        next(new NotFound('Карточка по указанному id не найдена'));
+        // eslint-disable-next-line no-useless-return
+        return;
       } else {
         next(new InternalServerError());
       }

@@ -39,15 +39,22 @@ module.exports.getAllUsers = (req, res, next) => {
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail(() => {
-      throw new NotFound('Пользователь не найден');
+      throw new Error('Пользователь не найден');
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id пользователя'));
+        // eslint-disable-next-line no-useless-return
         return;
+      // eslint-disable-next-line no-else-return
+      } else if (err.message === 'Пользователь не найден') {
+        next(new NotFound('Пользователь по указанному id не найден'));
+        // eslint-disable-next-line no-useless-return
+        return;
+      } else {
+        next(new InternalServerError());
       }
-      next(new InternalServerError());
     });
 };
 
