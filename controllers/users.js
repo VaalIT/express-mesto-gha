@@ -38,20 +38,11 @@ module.exports.getAllUsers = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
-    .orFail(() => {
-      throw new Error('Пользователь не найден');
-    })
+    .orFail(() => new NotFound('Пользователь с указанным id не существует'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequest('Передан некорректный id пользователя'));
-        // eslint-disable-next-line no-useless-return
-        return;
-      // eslint-disable-next-line no-else-return
-      } else if (err.message === 'Пользователь не найден') {
-        next(new NotFound('Пользователь по указанному id не найден'));
-        // eslint-disable-next-line no-useless-return
-        return;
       } else {
         next(new InternalServerError());
       }
@@ -63,26 +54,29 @@ module.exports.createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
   bcrypt.hash(password, 10)
-    .then((hash) => {
+    .then((hash) =>
       User.create({
         name, about, avatar, email, password: hash,
-      })
-        .then((user) => res.status(201).send({
-          user: {
-            name: user.name,
-            about: user.about,
-            avatar: user.avatar,
-            email: user.email,
-            _id: user._id,
-          },
-        }))
-        .catch((err) => {
-          if (err.code === 11000) {
-            next(new Conflict('Пользователь с таким Email уже существует'));
-          }
-          next(new InternalServerError());
-        });
+      }))
+    .then((user) => res.status(201).send({
+      user: {
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+        _id: user._id,
+      },
+    }))
+    .catch((err) => {
+      if (err.code === 11000) {
+        next(new Conflict('Пользователь с таким Email уже существует'));
+      } else if (err.name === 'ValidationError') {
+        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
+      } else {
+        next(new InternalServerError());
+      }
     });
+    .catch(next)
 };
 
 module.exports.getMyInfo = (req, res, next) => {
@@ -104,7 +98,7 @@ module.exports.updateUserInfo = (req, res, next) => {
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.send(new BadRequest('Переданы некорректные данные при обновлении профиля'));
+        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
       }
       next(new InternalServerError());
     });
